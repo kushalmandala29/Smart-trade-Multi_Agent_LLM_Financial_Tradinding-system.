@@ -45,12 +45,21 @@ def create_social_media_analyst(llm, toolkit):
 
         chain = prompt | llm.bind_tools(tools)
 
-        result = chain.invoke(state["messages"])
+        try:
+            result = chain.invoke(state["messages"])
+        except FileNotFoundError as fe:
+            return {
+                "messages": [],
+                "sentiment_report": f"Data file not found: {fe}. Please notify the team to investigate the issue with fundamental data retrieval for SPY.",
+            }
+        except Exception as e:
+            return {
+                "messages": [],
+                "sentiment_report": f"Error occurred: {str(e)}",
+            }
 
-        report = ""
-
-        if len(result.tool_calls) == 0:
-            report = result.content
+        # Always set report from result content to ensure report is not empty
+        report = result.content
 
         return {
             "messages": [result],

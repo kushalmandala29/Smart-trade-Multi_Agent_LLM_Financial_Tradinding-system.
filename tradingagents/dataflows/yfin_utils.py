@@ -115,3 +115,28 @@ class YFinanceUtils:
         majority_voting_result = row_0[row_0 == max_votes].index.tolist()
 
         return majority_voting_result[0], max_votes
+
+
+    def get_yahoo_finance_etf_news(symbol: Annotated[str, "ETF ticker"], start_date: str, end_date: str):
+        """Simple helper that constructs a Yahoo Finance query for an ETF using its holdings.
+
+        This is a lightweight helper that returns a textual placeholder. For production,
+        use Yahoo Finance APIs or web scraping with care for terms of service.
+        """
+        ticker = symbol
+        try:
+            info = yf.Ticker(ticker).info
+            holdings = info.get("holdings", None)
+        except Exception:
+            holdings = None
+
+        query = ticker
+        if holdings:
+            # join top holdings into a query for searching
+            try:
+                top = [h.get("symbol") for h in holdings[:5] if isinstance(h, dict) and h.get("symbol")]
+                query = f"{ticker} " + " ".join(top)
+            except Exception:
+                query = ticker
+
+        return {"query": query, "start_date": start_date, "end_date": end_date}

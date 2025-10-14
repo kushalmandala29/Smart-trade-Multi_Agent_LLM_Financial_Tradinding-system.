@@ -3,6 +3,7 @@ from chromadb.config import Settings
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
+import requests
 load_dotenv()
 class FinancialSituationMemory:
     def __init__(self, name="testing"):
@@ -12,6 +13,10 @@ class FinancialSituationMemory:
         self.chroma_client = chromadb.Client(Settings(allow_reset=True))
         self.situation_collection = self.chroma_client.create_collection(name=name)
         self.embedding_cache = {}
+        
+        # Configure API endpoints for embedding and sentiment models running in Colab
+        self.embedding_api_url = os.getenv("EMBEDDING_API_URL", "http://localhost:8000/embed")
+        self.sentiment_api_url = os.getenv("SENTIMENT_API_URL", "http://localhost:8000/sentiment")
 
     def preprocess_prompt(self, text):
         # Remove excessive whitespace and boilerplate
@@ -88,6 +93,36 @@ class FinancialSituationMemory:
             )
 
         return matched_results
+
+    # New function to call the embedding API
+    def call_embedding_api(self, text):
+        """Call the external API hosted in Colab to get embeddings."""
+        payload = {"text": text}
+        try:
+            response = requests.post(self.embedding_api_url, json=payload)
+            if response.status_code == 200:
+                return response.json().get("embedding")
+            else:
+                print(f"Embedding API error: {response.status_code} {response.text}")
+                return None
+        except Exception as e:
+            print(f"Exception calling embedding API: {e}")
+            return None
+
+    # New function to call the sentiment API
+    def call_sentiment_api(self, text):
+        """Call the external API hosted in Colab to get sentiment analysis."""
+        payload = {"text": text}
+        try:
+            response = requests.post(self.sentiment_api_url, json=payload)
+            if response.status_code == 200:
+                return response.json().get("sentiment")
+            else:
+                print(f"Sentiment API error: {response.status_code} {response.text}")
+                return None
+        except Exception as e:
+            print(f"Exception calling sentiment API: {e}")
+            return None
 
 
 if __name__ == "__main__":

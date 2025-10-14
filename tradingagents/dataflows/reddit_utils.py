@@ -133,3 +133,39 @@ def fetch_top_from_category(
         all_content.extend(all_content_curr_subreddit[:limit_per_subreddit])
 
     return all_content
+
+
+def get_reddit_etf_sentiment(ticker: Annotated[str, "ETF ticker"], date: Annotated[str, "date YYYY-MM-DD"], data_path: str = "reddit_data"):
+    """Aggregate reddit posts for ETF tickers by searching subreddit data folders.
+
+    Returns a list of posts matching the ticker or common ETF name. This is a lightweight
+    helper using existing data layout. For live sentiment, integrate with Pushshift or Reddit API.
+    """
+    all_posts = []
+    # search across all company categories for mentions of the ticker
+    for category in os.listdir(data_path):
+        cat_path = os.path.join(data_path, category)
+        if not os.path.isdir(cat_path):
+            continue
+        for data_file in os.listdir(cat_path):
+            if not data_file.endswith(".jsonl"):
+                continue
+            with open(os.path.join(cat_path, data_file), "r", encoding="utf-8") as fh:
+                for line in fh:
+                    if not line.strip():
+                        continue
+                    parsed = json.loads(line)
+                    post_date = datetime.utcfromtimestamp(parsed["created_utc"]).strftime("%Y-%m-%d")
+                    if post_date != date:
+                        continue
+                    if ticker.upper() in parsed.get("title", "").upper() or ticker.upper() in parsed.get("selftext", "").upper():
+                        all_posts.append({
+                            "title": parsed.get("title"),
+                            "content": parsed.get("selftext"),
+                            "url": parsed.get("url"),
+                            "upvotes": parsed.get("ups"),
+                            "posted_date": post_date,
+                        })
+    # basic sort
+    all_posts.sort(key=lambda x: x.get("upvotes", 0), reverse=True)
+    return all_posts

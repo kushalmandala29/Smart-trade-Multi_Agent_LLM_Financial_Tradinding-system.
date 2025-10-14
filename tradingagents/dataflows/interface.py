@@ -158,7 +158,11 @@ def get_simfin_balance_sheet(
         "us",
         f"us-balance-{freq}.csv",
     )
-    df = pd.read_csv(data_path, sep=";")
+    try:
+        df = pd.read_csv(data_path, sep=";")
+    except FileNotFoundError as e:
+        print("Balance sheet file not found:", e)
+        return ""
 
     # Convert date strings to datetime objects and remove any time components
     df["Report Date"] = pd.to_datetime(df["Report Date"], utc=True).dt.normalize()
@@ -705,6 +709,8 @@ def get_YFin_data(
 def get_stock_news_openai(ticker, curr_date):
     # Fetch raw news data using your existing Reddit/Google News functions
     news_data = get_reddit_company_news(ticker, curr_date, 7, 5)
+    if not news_data:
+        return f"No news data available for {ticker} between {curr_date} and 7 days prior."
     # Summarize using LangChain Gemini wrapper
     llm = ChatGoogleGenerativeAI(model="gemini-pro")
     prompt = f"Summarize the following social media news for {ticker} from 7 days before {curr_date} to {curr_date}. Focus on trading-relevant insights.\n\n{news_data}"

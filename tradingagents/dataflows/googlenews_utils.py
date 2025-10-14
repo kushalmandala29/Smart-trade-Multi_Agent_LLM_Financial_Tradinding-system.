@@ -126,3 +126,14 @@ def getNewsData(query, start_date, end_date):
             break
 
     return news_results
+
+
+def get_google_news_rss_etf(ticker, start_date, end_date):
+    """Simple wrapper to fetch Google News results for ETFs (ticker or name).
+
+    This is a lightweight helper that reuses getNewsData. It accepts ETF tickers like
+    'SPY' and uses the ticker as query by default. Replace or extend with an API-backed
+    implementation for production use.
+    """
+    query = ticker
+    return getNewsData(query, start_date, end_date)
